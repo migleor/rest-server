@@ -1,49 +1,81 @@
 const { response } = require('express');
+const User = require('../models/user');
+const bcryptjs = require('bcryptjs');
 
-const getUser = (req, res) => {
+const getUsers = async (req, res) => {
 
-    const query = req.query;
+    const { limit = 5, page = 0 } = req.query;
+
+    const [totalUsers, users] = await Promise.all([
+        User.countDocuments({status: true}),
+        User.find({status: true})
+        .skip(Number(page))
+        .limit(Number(limit))        
+    ]);
 
     res.json({
-        msg: 'GET Api Controller!!!',
-        query
+        totalUsers,
+        page,
+        users
     });
 };
 
-const storeUser = (req, res) => {
-    const {nombre, edad} = req.body;
+const storeUser = async (req, res) => {
 
-    res.json({
-        msg: 'POST Api Controller!!!',
+    const {	nombre,email,password,role } = req.body;
+    const user = new User({
         nombre,
-        edad
+        email,
+        password,
+        role
     });
-};
-const deleteUser = (req, res) => {
-    res.json({
-        msg: 'DELETE Api Controller!!!'
-    });
-};
-const updateUser = (req, res) => {
 
+    //encriptar password
+    const salt = bcryptjs.genSaltSync();
+    user.password = bcryptjs.hashSync(password, salt);
+
+    try {
+        await user.save();
+        res.json({
+            msg: 'Usuario creado exitosamente',
+            user
+        });        
+    } catch (error) {
+        console.log('Error el insertar el registro', error);
+    }
+
+};
+const deleteUser = async (req, res) => {
     const id = req.params.userId;
 
+    const userDb = await User.findByIdAndUpdate(id, {status: false});
+
     res.json({
-        msg: 'PUT Api Controller!!!',
-        id
+        msg: 'Usuario Borrado exitosamente'
     });
 };
-const patchUser = (req, res) => {
+const updateUser = async (req, res) => {
+
+    const id = req.params.userId;
+    const { _id, password, google, correo, ...data } = req.body;
+
+    if(password) {
+        const salt = bcryptjs.genSaltSync();
+        data.password = bcryptjs.hashSync(password, salt);        
+    }
+
+    const userDb = await User.findByIdAndUpdate(id, data);
+
     res.json({
-        msg: 'PATCH Api Controller!!!'
+        msg: 'Usuario Actualizado Exitosamente',
+        userDb
     });
 };
 
 
 module.exports = { 
-    getUser,
+    getUsers,
     storeUser,
     deleteUser,
-    updateUser,
-    patchUser
+    updateUser
  };
