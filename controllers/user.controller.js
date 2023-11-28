@@ -48,10 +48,14 @@ const storeUser = async (req, res) => {
 const deleteUser = async (req, res) => {
     const id = req.params.userId;
 
+    const uid = req.uid;
+    const userAuthenticated = req.userAuthenticated;
+
     const userDb = await User.findByIdAndUpdate(id, {status: false});
 
     res.json({
-        msg: 'Usuario Borrado exitosamente'
+        msg: 'Usuario Borrado exitosamente',
+        userDb,
     });
 };
 const updateUser = async (req, res) => {
